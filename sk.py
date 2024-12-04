@@ -1,53 +1,31 @@
+import os
 from semantic_kernel import Kernel
-from semantic_kernel.connectors.ai.open_ai import AzureOpenAI
-from semantic_kernel.orchestration.context_variables import ContextVariables
+from semantic_kernel.ai.open_ai import AzureOpenAI
+from semantic_kernel.orchestration import SkContext
 
-# Initialize Semantic Kernel
+# Set your Azure OpenAI API key and endpoint
+api_key = "your_azure_openai_api_key"
+api_endpoint = "your_azure_openai_endpoint"
+
+# Initialize the Semantic Kernel
 kernel = Kernel()
 
-# Configure AzureOpenAI
-deployment_name = "text-davinci-003"  # Replace with your Azure OpenAI deployment name
-api_key = "<your-azure-openai-key>"  # Replace with your Azure OpenAI API key
-endpoint = "https://<your-endpoint>.openai.azure.com/"  # Replace with your Azure OpenAI endpoint
-
-# Add AzureOpenAI model to the kernel
-azure_openai_model = AzureOpenAI(
-    deployment_name=deployment_name,
+# Set up Azure OpenAI connector with API Key and Endpoint
+azure_openai = AzureOpenAI(
     api_key=api_key,
-    endpoint=endpoint
+    endpoint=api_endpoint,
+    model="gpt-3.5-turbo"  # You can use any available model like "gpt-4", "gpt-3.5-turbo"
 )
 
-kernel.add_text_completion_service(
-    service_id="openai-service",
-    service=azure_openai_model
-)
+# Add the Azure OpenAI to the kernel
+kernel.add_ai_connector("azure_openai", azure_openai)
 
-# Define Chat Functionality
-def chatbot_response(user_input):
-    """
-    Process user input using AzureOpenAI and return the response.
-    """
-    try:
-        # Use Semantic Kernel to invoke the model
-        context_vars = ContextVariables()  # Initialize context variables
-        context_vars["input"] = user_input  # Add user input to the context
+# Define a simple prompt to test
+prompt = "What is the capital of France?"
 
-        # Call the text completion service
-        response = kernel.run("openai-service", input_vars=context_vars)
-        return response
+# Execute the prompt using Azure OpenAI through the Semantic Kernel
+context = SkContext()
+response = kernel.run_async("azure_openai", prompt, context)
 
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-# Main Chat Loop
-if __name__ == "__main__":
-    print("Chatbot is running. Type 'exit' to quit.")
-    while True:
-        user_input = input("You: ")
-        if user_input.lower() == "exit":
-            print("Goodbye!")
-            break
-
-        # Get chatbot response
-        bot_response = chatbot_response(user_input)
-        print(f"Bot: {bot_response}")
+# Print the response
+print(f"Response from Azure OpenAI: {response.result}")
