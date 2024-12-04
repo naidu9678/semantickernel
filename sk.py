@@ -1,31 +1,49 @@
-import os
-from semantic_kernel import Kernel
-from semantic_kernel.ai.open_ai import AzureOpenAI
-from semantic_kernel.orchestration import SkContext
+import semantic_kernel as sk
+from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 
-# Set your Azure OpenAI API key and endpoint
-api_key = "your_azure_openai_api_key"
-api_endpoint = "your_azure_openai_endpoint"
+# Step 1: Setup Azure OpenAI
+AZURE_OPENAI_ENDPOINT = "https://<your-endpoint>.openai.azure.com/"
+AZURE_OPENAI_API_KEY = "<your-api-key>"
+AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-35-turbo"
 
-# Initialize the Semantic Kernel
-kernel = Kernel()
-
-# Set up Azure OpenAI connector with API Key and Endpoint
-azure_openai = AzureOpenAI(
-    api_key=api_key,
-    endpoint=api_endpoint,
-    model="gpt-3.5-turbo"  # You can use any available model like "gpt-4", "gpt-3.5-turbo"
+# Initialize Azure OpenAI connector
+azure_openai = AzureChatCompletion(
+    deployment_name=AZURE_OPENAI_DEPLOYMENT_NAME,
+    api_key=AZURE_OPENAI_API_KEY,
+    endpoint=AZURE_OPENAI_ENDPOINT,
 )
 
-# Add the Azure OpenAI to the kernel
-kernel.add_ai_connector("azure_openai", azure_openai)
+# Step 2: Initialize the Kernel
+kernel = sk.Kernel()
+kernel.add_chat_service("azure_openai", azure_openai)
 
-# Define a simple prompt to test
-prompt = "What is the capital of France?"
+# Step 3: Create a Semantic Function
+# This function summarizes text into a concise summary
+summary_prompt = """
+Summarize the following text into a concise summary in one sentence:
 
-# Execute the prompt using Azure OpenAI through the Semantic Kernel
-context = SkContext()
-response = kernel.run_async("azure_openai", prompt, context)
+{{text}}
 
-# Print the response
-print(f"Response from Azure OpenAI: {response.result}")
+Summary:
+"""
+summary_function = kernel.create_semantic_function(
+    prompt=summary_prompt,
+    max_tokens=100,  # Limit response length
+    temperature=0.7,  # Creativity level
+)
+
+# Step 4: Execute the Semantic Function
+input_text = """
+Semantic Kernel is an open-source framework that simplifies the integration of AI models into applications. 
+It helps developers manage prompts, execute AI plugins, and orchestrate workflows using natural language inputs.
+"""
+
+print("Input Text:")
+print(input_text)
+
+result = summary_function.invoke_async(text=input_text)
+summary = result.result  # Extract the result
+
+# Display the summary
+print("\nGenerated Summary:")
+print(summary)
